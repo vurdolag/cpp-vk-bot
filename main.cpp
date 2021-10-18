@@ -32,26 +32,20 @@ private:
 
     [[noreturn]] void event_loop()  {
         Task * m;
-
         while (true) {
             auto t = get_time_now();
 
             mux->lock();
             m = get_last_task();
 
-            //cout << m->time_start << " " << t << endl;
-
             while (task_index > 0 && m->time_start != 0 && t > m->time_start) {
                 thread(m->func, m->arg).detach();
                 del_last_task();
                 m = get_last_task();
-                cout << "." << endl;
             }
             mux->unlock();
 
-            //cout << "tick" << endl;
-
-            this_thread::sleep_for(1000ms);
+            this_thread::sleep_for(50ms);
         }
     }
 
@@ -71,6 +65,18 @@ private:
         return tasks + (task_index - 1);
     }
 
+    void tasks_re_alloc() {
+        task_count *= 2;
+        auto new_tasks = new Task[task_count];
+
+        for (size_t i = 0; i < task_index; i++) {
+            new_tasks[i] = tasks[i];
+        }
+
+        delete[] tasks;
+        tasks = new_tasks;
+    }
+
 public:
     void add(void (*func)(void *), void * arg, size_t time_start = 0) {
         cout << "add" << endl;
@@ -78,6 +84,10 @@ public:
         auto t = Task(func, arg, get_time_now() + time_start * 10000000);
 
         mux->lock();
+
+        if (task_index >= task_count) {
+            tasks_re_alloc();
+        }
 
         if (task_index == 0) {
             tasks[task_index++] = t;
@@ -153,7 +163,7 @@ void bar(void * c) {
     auto i = (Coro<string> *)c;
     string p = *i->arg;
 
-    this_thread::sleep_for(3000ms);
+    this_thread::sleep_for(100ms);
 
     auto val = p + " + " + p;
 
@@ -179,12 +189,9 @@ void foo(void * arg) {
 int main() {
     auto loop = Loop(1024);
 
-    //loop.add(foo, &loop, 600);
-    loop.add(foo, &loop, 5);
-    loop.add(foo, &loop, 4);
-    loop.add(foo, &loop, 6);
-    loop.add(foo, &loop, 3);
-    loop.add(foo, &loop, 7);
+    for (int i = 0; i < 100; i++) {
+        loop.add(foo, &loop, i);
+    }
 
     system("pause");
 
