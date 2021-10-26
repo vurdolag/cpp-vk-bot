@@ -12,8 +12,7 @@ struct RES {
 };
 
 
-DWORD GetProcessByExeName(char * ExeName)
-{
+DWORD GetProcessByExeName(char * ExeName) {
     PROCESSENTRY32 pe32;
     pe32.dwSize = sizeof(PROCESSENTRY32);
 
@@ -56,16 +55,15 @@ void check(char * name) {
 }
 
 void start(char * command) {
-
     system(command);
 }
 
-void activate(HWND hwnd) {
+void activate(HWND hwnd, int param) {
     Sleep(1000);
-    cout << "activate" << endl;
-    SetFocus(hwnd);
-    //GetWindow(hwnd, GW_OWNER);
-    //IsWindowVisible(hwnd);
+    cout << "Show!" << endl;
+    ShowWindow (hwnd, SW_HIDE);
+    Sleep(300);
+    ShowWindow(hwnd, param);
     Sleep(1000);
 }
 
@@ -99,29 +97,46 @@ BOOL CALLBACK EnumWindowsProc(HWND hwnd, LPARAM lParam) {
     if (x != -1) {
         printf("Find -> %i : %ls : %ls\n\n", x, pat, v.c_str());
         r->w = hwnd;
-        activate(hwnd);
         return 0;
     }
 
     //MessageBoxW(nullptr, str,L"text",0)
 
-    Sleep(50);
+    Sleep(100);
     return 1;
 }
 
+void click_enter(char * name) {
+    Sleep(1000);
+    cout << "Click! " << name << endl;
+    keybd_event(VK_RETURN, 0, 0, 0);
+    keybd_event(VK_RETURN, 0, KEYEVENTF_KEYUP, 0);
+
+    Sleep(1000);
+}
+
+void Close(HWND hwnd) {
+    cout << "Close!" << endl;
+    Sleep(300);
+    SendMessageA(hwnd, WM_CLOSE, 0, 0);
+    Sleep(300);
+}
 
 int main(int argc, char *argv[]) {
-    //for (int i = 0; i < argc; i++) {
-    //    cout << argv[i] << endl;
-   // }
+    cout << "params :" << endl;
+    for (int i = 0; i < argc; i++) {
+        cout << argv[i] << endl;
+    }
+    cout << "# # # # # # # # # # # # #" << endl;
 
     int t = atoi(argv[1]) * 1000;
     char * pat1 = argv[2];
     char * pat2 = argv[3];
-    char * name = argv[4];
-    string command = string(argv[5]);
+    char * pat3 = argv[4];
+    char * name = argv[5];
+    string command = string(argv[6]);
 
-    for (int i = 6; i < argc; i++) {
+    for (int i = 7; i < argc; i++) {
         command += " " + string(argv[i]);
     }
     command = "\"" + command + "\"";
@@ -137,30 +152,24 @@ int main(int argc, char *argv[]) {
 
         w->k = pat1;
         EnumWindows(EnumWindowsProc, (LPARAM)w);
+        activate(w->w, SW_MAXIMIZE);
 
         Sleep(1000);
-        cout << "Click! " << name << endl;
-        keybd_event(VK_RETURN, 0, 0, 0);
-        keybd_event(VK_RETURN, 0, KEYEVENTF_KEYUP, 0);
 
-        Sleep(1000);
+        click_enter(name);
 
         w->k = pat2;
         EnumWindows(EnumWindowsProc, (LPARAM)w);
+        activate(w->w, SW_MAXIMIZE);
 
-
-        keybd_event(VK_LWIN, 0, 0, 0);
-        Sleep(300);
-        keybd_event(VK_UP, 0, 0, 0);
-
-
-        Sleep(300);
-        keybd_event(VK_UP, 0, KEYEVENTF_KEYUP, 0);
-        keybd_event(VK_LWIN, 0, KEYEVENTF_KEYUP, 0);
-
+        w->k = pat3;
+        EnumWindows(EnumWindowsProc, (LPARAM)w);
+        activate(w->w, SW_HIDE);
 
         Sleep(t);
-        check(name);
+
+        activate(w->w, SW_MAXIMIZE);
+        Close(w->w);
 
         Sleep(1000);
     }
