@@ -40,7 +40,7 @@ void foo(void * arg) {
 int main() {
     auto loop = Loop(1024);
 
-    for (int i = 0; i < 100; i++) {
+    for (int i = 0; i < 3; i++) {
         loop.add(foo, &loop, i);
     }
 

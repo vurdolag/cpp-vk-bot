@@ -13,14 +13,52 @@ struct Task {
     void (*func)(void *) = nullptr;
     void * arg = nullptr;
 
+    void call();
+
     Task(void (*func_)(void *), void * arg_, size_t time_);
     Task();
 };
 
 
+class Worker {
+private:
+    Task * task = nullptr;
+
+    [[noreturn]] void loop();
+
+public:
+    void set(Task * task_);
+
+    bool check() const ;
+
+    Worker();
+};
+
+
+class ThreadPool {
+private:
+    Worker * pool = nullptr;
+    size_t count = 0;
+    std::mutex * mux;
+
+    Worker * alloc_new_worker();
+
+    Worker * get_worker();
+
+
+public:
+    void start(Task * task_);
+
+    ThreadPool();
+};
+
+
+
+
 class Loop {
 private:
-    Task * tasks;
+    Task * tasks = nullptr;
+    ThreadPool * pool = nullptr;
     size_t task_count = 0;
     size_t task_index = 0;
     std::mutex * mux;
