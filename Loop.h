@@ -6,6 +6,7 @@
 #define AWAITEBLE_LOOP_H
 
 #include <mutex>
+#include <vector>
 
 
 struct Task {
@@ -13,7 +14,9 @@ struct Task {
     void (*func)(void *) = nullptr;
     void * arg = nullptr;
 
-    void call();
+    void call() const;
+    void clear();
+    bool is_empty() const;
 
     Task(void (*func_)(void *), void * arg_, size_t time_);
     Task();
@@ -22,12 +25,12 @@ struct Task {
 
 class Worker {
 private:
-    Task * task = nullptr;
+    Task task;
 
     [[noreturn]] void loop();
 
 public:
-    void set(Task * task_);
+    void set(Task & task_);
 
     bool check() const ;
 
@@ -35,9 +38,12 @@ public:
 };
 
 
+using POOL = std::vector<Worker *>;
+
+
 class ThreadPool {
 private:
-    Worker * pool = nullptr;
+    POOL pool;
     size_t count = 0;
     std::mutex * mux;
 
@@ -50,14 +56,14 @@ public:
     void start(Task * task_);
 
     ThreadPool();
+    ~ThreadPool();
 };
-
 
 
 
 class Loop {
 private:
-    Task * tasks = nullptr;
+    std::vector<Task *> tasks;
     ThreadPool * pool = nullptr;
     size_t task_count = 0;
     size_t task_index = 0;
@@ -68,8 +74,6 @@ private:
     void del_last_task();
 
     Task * get_last_task();
-
-    void tasks_re_alloc();
 
 public:
     void add(void (*func)(void *), void * arg, size_t time_start = 0);

@@ -11,37 +11,50 @@ using namespace std;
 void bar(void * c) {
     auto a = CORO(c);
 
-    auto p = (char *)a->args();
+    auto p = *(string *)a->args();
 
-    auto ad = " + Added";
-    strcat(p, ad);
+    auto ad = new string(p + " + Added");
 
-    sleep(3000);
+    sleep(100);
 
-    a->write(p, strlen(p));
+    a->set(ad);
 }
+
+int glob = 0;
 
 
 void foo(void * arg) {
     auto loop = LOOP(arg);
 
-    char i[128] = "Hello";
 
-    auto a = Coro(loop, bar, &i, 5);
+    auto i = new string("Hello");
 
-    auto val = a.wait();
+    auto a = Coro(loop, bar, i, 5);
 
-    cout << "result: " << (char *)val << endl;
+    auto val = (string *)a.wait();
 
-    loop->add(foo, arg, 10);
+    cout << glob++ << " result: " << *val << endl;
+
+    delete val;
+    delete i;
+
+    loop->add(foo, arg, 2);
+
 }
 
+
+void fun(void *) {
+    sleep(1000);
+    cout << "in fun!" << endl;
+    sleep(1000);
+}
 
 int main() {
     auto loop = Loop(1024);
 
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < 100; i++) {
         loop.add(foo, &loop, i);
+        //loop.add(fun, nullptr, i * 5);
     }
 
     system("pause");

@@ -19,7 +19,7 @@ void * Coro::wait() {
         if (ready) {
             break;
         }
-        sleep(50);
+        sleep(100);
     }
     return out;
 }
