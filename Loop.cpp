@@ -9,16 +9,10 @@
 using thread = std::thread;
 
 
-void Task::call() const {
+void Task::call() {
+    is_called = true;
     func(arg);
-}
-void Task::clear() {
-    arg = nullptr;
-    func = nullptr;
-    time_start = 0;
-}
-bool Task::is_empty() const {
-    return func == nullptr;
+    delete this;
 }
 
 Task::Task(void (*func_)(void *), void * arg_, size_t time_): func(func_), arg(arg_), time_start(time_){}
@@ -31,23 +25,35 @@ Task::Task(){
 
 
 [[noreturn]] void Worker::loop() {
-    while (true){
-        if (!task.is_empty()) {
-            task.call();
-            task.clear();
+    while (active){
+        sleep(250);
+        if (!task.empty()) {
+            in_process = true;
+            Task * t = task.back();
+            std::cout << t << " back " << task.size() << std::endl;
+            if (task.empty() || t->is_called) {
+                continue;
+            }
+            task.pop_back();
+
+            //std::cout << t->time_start << std::endl;
+
+            t->call();
+            in_process = false;
         }
-        sleep(100);
     }
 }
 
-void Worker::set(Task & task_) {
-    task.func = task_.func;
-    task.arg = task_.arg;
-    task.time_start = task_.time_start;
+int Worker::check() const {
+    return in_process;
 }
 
-bool Worker::check() const {
-    return task.is_empty();
+void Worker::add(Task * t){
+    task.push_back(t);
+}
+
+void Worker::stop() {
+    active = false;
 }
 
 Worker::Worker() {
@@ -55,40 +61,40 @@ Worker::Worker() {
 }
 
 
-Worker * ThreadPool::alloc_new_worker() {
+Worker * ThreadPool::get_worker() {
+    for (auto w: pool) {
+        std::cout << w->check() << " ";
+    }
+    std::cout << "\n";
+
+
+    //std::cout << "xxx " << pool.size() << std::endl;
+
+    for (auto w: pool) {
+        if (!w->check()) {
+            return w;
+        }
+    }
+
     auto w = new Worker();
-    mux->lock();
     pool.push_back(w);
-    mux->unlock();
+
     return w;
 }
 
-Worker * ThreadPool::get_worker() {
-    for (size_t c = 0; c < 5; c++) {
-        mux->lock();
-        for (auto w : pool) {
-            if (w->check()) {
-                mux->unlock();
-                return w;
-            }
-        }
-        mux->unlock();
-        sleep(100);
-    }
-    return alloc_new_worker();
-}
 
 void ThreadPool::start(Task * task_) {
-    get_worker()->set(*task_);
+    auto w = get_worker();
+    w->add(task_);
 }
 
 ThreadPool::ThreadPool() {
+    mux = new std::mutex;
     count = 10;
     for (size_t i = 0; i < count; i++) {
         auto w = new Worker();
         pool.push_back(w);
     }
-    mux = new std::mutex;
 }
 
 ThreadPool::~ThreadPool() {
@@ -99,50 +105,41 @@ ThreadPool::~ThreadPool() {
 }
 
 
-void Loop::event_loop() {
-    Task * task;
+[[noreturn]] void Loop::event_loop() {
     while (true) {
+        sleep(50);
+
         auto t = get_time_now();
 
-        //for (auto i : tasks) {
-        //    std::cout << i->time_start << std::endl;
-        //}
-
-        mux->lock();
-        task = tasks.back();
-        mux->unlock();
-
-        while (!tasks.empty() && task->time_start != 0 && t > task->time_start) {
-            pool->start(task);
-
+        while (!tasks.empty()) {
             mux->lock();
+            Task * task = tasks.back();
+            if (task->time_start >= t) {
+                mux->unlock();
+                break;
+            }
             tasks.pop_back();
-            task = tasks.back();
             mux->unlock();
+
+            pool->start(task);
         }
-        sleep(100);
     }
 }
 
 
 void Loop::add(void (*func)(void *), void * arg, size_t time_start) {
-
-
-    auto t = get_time_now() + time_start * 10000000;
+    auto t = get_time_now() + time_start * 1000000;
     auto tk = new Task(func, arg, t);
 
-    //std::cout << "add " << t << std::endl;
-
     mux->lock();
-
     tasks.push_back(tk);
     std::sort(tasks.begin(), tasks.end(), [](const Task * lhs, const Task * rhs) {
-        return lhs->time_start < rhs->time_start;
+        return lhs->time_start > rhs->time_start;
     });
     mux->unlock();
 }
 
-Loop::Loop(size_t task_count_): task_count(task_count_) {
+Loop::Loop() {
     mux = new std::mutex();
     pool = new ThreadPool();
     thread(&Loop::event_loop, this).detach();

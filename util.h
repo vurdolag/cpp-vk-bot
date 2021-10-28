@@ -9,7 +9,7 @@
 #include "Coro.h"
 
 
-
+size_t get_rand(size_t a, size_t b);
 Coro * CORO(void * val);
 Loop * LOOP(void * val);
 size_t get_time_now();

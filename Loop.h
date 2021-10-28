@@ -13,26 +13,30 @@ struct Task {
     size_t time_start = 0;
     void (*func)(void *) = nullptr;
     void * arg = nullptr;
+    bool is_called = false;
 
-    void call() const;
-    void clear();
-    bool is_empty() const;
+    void call();
 
     Task(void (*func_)(void *), void * arg_, size_t time_);
     Task();
 };
 
 
+using TASKS = std::vector<Task *>;
+
+
 class Worker {
 private:
-    Task task;
+    TASKS task;
+    bool active = true;
+    bool in_process = false;
 
     [[noreturn]] void loop();
 
 public:
-    void set(Task & task_);
-
-    bool check() const ;
+    int check() const ;
+    void add(Task * t);
+    void stop();
 
     Worker();
 };
@@ -46,8 +50,6 @@ private:
     POOL pool;
     size_t count = 0;
     std::mutex * mux;
-
-    Worker * alloc_new_worker();
 
     Worker * get_worker();
 
@@ -63,21 +65,16 @@ public:
 
 class Loop {
 private:
-    std::vector<Task *> tasks;
+    TASKS tasks;
     ThreadPool * pool = nullptr;
-    size_t task_count = 0;
-    size_t task_index = 0;
     std::mutex * mux;
 
     [[noreturn]] void event_loop();
 
-    void del_last_task();
-
-    Task * get_last_task();
-
 public:
     void add(void (*func)(void *), void * arg, size_t time_start = 0);
-    explicit Loop(size_t task_count_);
+
+    explicit Loop();
     ~Loop();
 
 };

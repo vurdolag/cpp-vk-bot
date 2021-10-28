@@ -15,21 +15,22 @@ void bar(void * c) {
 
     auto ad = new string(p + " + Added");
 
-    sleep(100);
+    sleep(get_rand(100, 200));
 
     a->set(ad);
 }
 
 int glob = 0;
+std::mutex mux;
 
 
 void foo(void * arg) {
     auto loop = LOOP(arg);
 
 
-    auto i = new string("Hello");
+    auto i = new string("Hello -- ");
 
-    auto a = Coro(loop, bar, i, 5);
+    auto a = Coro(loop, bar, i, get_rand(10, 50));
 
     auto val = (string *)a.wait();
 
@@ -38,23 +39,50 @@ void foo(void * arg) {
     delete val;
     delete i;
 
-    loop->add(foo, arg, 2);
+    loop->add(foo, arg, get_rand(100, 500));
+    loop->add(foo, arg, get_rand(90, 200));
 
 }
 
+void fun2(void * arg);
 
-void fun(void *) {
-    sleep(1000);
-    cout << "in fun!" << endl;
-    sleep(1000);
+void fun1(void * arg) {
+    auto loop = LOOP(arg);
+
+    sleep(get_rand(300, 10000));
+    mux.lock();
+    glob++;
+    cout << glob << " in === ===!" << endl;
+    mux.unlock();
+    sleep(get_rand(300, 10000));
+
+    loop->add(fun2, arg, get_rand(10000, 100000));
+    loop->add(fun1, arg, get_rand(100, 10000));
+}
+
+void fun2(void * arg) {
+    auto loop = LOOP(arg);
+
+
+    sleep(get_rand(100, 1000));
+    mux.lock();
+    glob++;
+    cout << glob << " in +++!" << endl;
+    mux.unlock();
+    sleep(get_rand(100, 1000));
+
+    loop->add(fun1, arg, get_rand(10000, 100000));
+    loop->add(fun2, arg, get_rand(10000, 100000));
+
 }
 
 int main() {
-    auto loop = Loop(1024);
+    auto loop = Loop();
 
-    for (int i = 0; i < 100; i++) {
-        loop.add(foo, &loop, i);
-        //loop.add(fun, nullptr, i * 5);
+    for (int i = 1; i < 11; i++) {
+        //loop.add(foo, &loop, i);
+        loop.add(foo, &loop, i * 1000);
+        sleep(100);
     }
 
     system("pause");
