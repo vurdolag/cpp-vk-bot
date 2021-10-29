@@ -12,6 +12,7 @@ using thread = std::thread;
 void Task::call() {
     is_called = true;
     func(arg);
+
     delete this;
 }
 
@@ -24,19 +25,18 @@ Task::Task(){
 
 
 
+
 [[noreturn]] void Worker::loop() {
     while (active){
-        sleep(250);
+        sleep(10);
         if (!task.empty()) {
             in_process = true;
             Task * t = task.back();
-            std::cout << t << " back " << task.size() << std::endl;
             if (task.empty() || t->is_called) {
+                in_process = false;
                 continue;
             }
             task.pop_back();
-
-            //std::cout << t->time_start << std::endl;
 
             t->call();
             in_process = false;
@@ -62,10 +62,10 @@ Worker::Worker() {
 
 
 Worker * ThreadPool::get_worker() {
-    for (auto w: pool) {
-        std::cout << w->check() << " ";
-    }
-    std::cout << "\n";
+    //for (auto w: pool) {
+    //    std::cout << w->check() << " ";
+    //}
+    //std::cout << "\n";
 
 
     //std::cout << "xxx " << pool.size() << std::endl;
@@ -107,11 +107,10 @@ ThreadPool::~ThreadPool() {
 
 [[noreturn]] void Loop::event_loop() {
     while (true) {
-        sleep(50);
-
-        auto t = get_time_now();
+        sleep(10);
 
         while (!tasks.empty()) {
+            auto t = get_time_now();
             mux->lock();
             Task * task = tasks.back();
             if (task->time_start >= t) {

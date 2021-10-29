@@ -7,8 +7,10 @@
 
 #include "Loop.h"
 #include "Coro.h"
+#include "curl/curl.h"
 
 
+CURLcode POST(std::string & url, std::string & data, std::string & buff);
 size_t get_rand(size_t a, size_t b);
 Coro * CORO(void * val);
 Loop * LOOP(void * val);

@@ -4,3 +4,6 @@ project(awaiteble)
 set(CMAKE_CXX_STANDARD 17)
 
 add_executable(awaiteble Coro.cpp Loop.cpp util.cpp main.cpp)
+
+
+target_link_libraries(awaiteble LINK_PUBLIC libcurl.dll)
