@@ -3,7 +3,15 @@ project(awaiteble)
 
 set(CMAKE_CXX_STANDARD 17)
 
-add_executable(awaiteble Coro.cpp Loop.cpp util.cpp main.cpp)
+
+set(CMAKE_CXX_STANDARD_LIBRARIES "-static-libgcc -static-libstdc++ -lwsock32 -lws2_32 ${CMAKE_CSS_STANDARD_LIBRARIES}")
+set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-Bstatic,--whole-archive -lwinpthread -Wl,--no-whole-archive")
+
+#set(CMAKE_EXE_LINKER_FLAGS "-static-libgcc -static-libstdc++  -pthread")
 
 
-target_link_libraries(awaiteble LINK_PUBLIC libcurl.dll)
+add_executable(awaiteble Coro.cpp Loop.cpp util.cpp main.cpp RequestSession.h RequestSession.cpp)
+
+
+find_library(LIB libcurl.dll lib)
+target_link_libraries(awaiteble LINK_PUBLIC ${LIB})

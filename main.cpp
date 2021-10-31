@@ -1,7 +1,8 @@
 #include <iostream>
+#include <fstream>
 #include "Loop.h"
 #include "util.h"
-#include "curl/curl.h"
+#include "RequestSession.h"
 
 
 using namespace std;
@@ -12,14 +13,14 @@ std::mutex mux;
 
 
 struct Request {
-    string method;
     string url;
     string data;
 
+    RequestSession * session;
+
     Loop * loop;
 
-    Request(string method_, string url_, string data_):
-        method(std::move(method_)), url(std::move(url_)), data(std::move(data_)) {}
+    Request(string url_, string data_): url(std::move(url_)), data(std::move(data_)) {}
 };
 
 
@@ -29,11 +30,17 @@ void request(void * arg) {
 
     string buff;
 
-    POST(req->url, req->data, buff);
+    auto v = req->session->GET(req->url.c_str(), nullptr, &buff);
 
-    cout << buff << endl;
+    ofstream out("out.txt");
 
-    req->loop->add(request, arg, get_rand(1000, 30000));
+    out << buff.c_str();
+
+    out.close();
+
+    cout << v << " " << buff.size() << endl;
+
+    req->loop->add(request, arg, get_rand(10000, 30000));
 }
 
 
@@ -98,11 +105,26 @@ void fun2(void * arg) {
 int main() {
     auto loop = Loop();
 
-    auto req = new Request("POST","https://httpbin.org/anything","key=val");
+    auto ua = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/95.0.4638.54 Safari/537.36";
+    auto proxy = Proxy{
+            "http://45.86.1.109:4060",
+            "Babayka",
+            "T6jQSNo5Bo"
+    };
+
+    auto name = "first.txt";
+
+    string data;
+
+    auto r = RequestSession(name, ua, &proxy);
+
+    auto req = new Request("https://vk.com/feed","");
+    //auto req = new Request("http://httpbin.org/anything", data);
     req->loop = &loop;
+    req->session = &r;
 
 
-    for (int i = 1; i < 3; i++) {
+    for (int i = 1; i < 2; i++) {
         loop.add(request, req, i * 1000 * 3);
         sleep(100);
         loop.add(foo, &loop, i * 1500);
