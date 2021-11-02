@@ -7,6 +7,8 @@
 
 #include <mutex>
 #include <vector>
+#include <thread>
+#include <set>
 
 
 struct Task {
@@ -14,8 +16,9 @@ struct Task {
     void (*func)(void *) = nullptr;
     void * arg = nullptr;
     bool is_called = false;
+    bool is_ready = false;
 
-    void call();
+    inline void call();
 
     Task(void (*func_)(void *), void * arg_, size_t time_);
     Task();
@@ -23,22 +26,30 @@ struct Task {
 
 
 using TASKS = std::vector<Task *>;
+using TASKS_IN_PROCESS = std::vector<Task *>;
 
 
 class Worker {
 private:
-    TASKS task;
+    Task * task = nullptr;
+    std::thread * loop_thread = nullptr;
+    size_t last_start = 0;
     bool active = true;
     bool in_process = false;
+    bool loop_is_exit = false;
 
     [[noreturn]] void loop();
 
 public:
-    int check() const ;
-    void add(Task * t);
-    void stop();
+    inline size_t get_last_start();
+    inline bool is_processed() const;
+    inline bool is_active() const;
+    inline bool has_task() const;
+    inline void add(Task * t);
+    inline void stop();
 
     Worker();
+    ~Worker();
 };
 
 
@@ -51,25 +62,29 @@ private:
     size_t count = 0;
     std::mutex * mux;
 
-    Worker * get_worker();
-
+    inline Worker * get_worker();
 
 public:
-    void start(Task * task_);
+    inline void management(size_t t);
+    inline void start(Task * task_);
 
     ThreadPool();
     ~ThreadPool();
 };
 
 
-
 class Loop {
 private:
     TASKS tasks;
+    TASKS_IN_PROCESS tasks_in_process;
     ThreadPool * pool = nullptr;
+    std::thread * loop_thread = nullptr;
     std::mutex * mux;
 
     [[noreturn]] void event_loop();
+
+    inline void dealloc_called_tasks();
+    inline Task * alloc_task(void (*func)(void *), void * arg, size_t t) const;
 
 public:
     void add(void (*func)(void *), void * arg, size_t time_start = 0);

@@ -28,7 +28,7 @@ void RequestSession::set_default_opt() {
     curl_easy_setopt(curl, CURLOPT_TCP_KEEPALIVE, 1);
 
     // debug info
-    curl_easy_setopt(curl, CURLOPT_VERBOSE, 1);
+    //curl_easy_setopt(curl, CURLOPT_VERBOSE, 1);
 
     if (user_agent) {
         curl_easy_setopt(curl, CURLOPT_USERAGENT, user_agent);

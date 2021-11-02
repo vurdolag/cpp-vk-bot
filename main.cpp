@@ -32,7 +32,7 @@ void request(void * arg) {
 
     auto v = req->session->GET(req->url.c_str(), nullptr, &buff);
 
-    ofstream out("out.txt");
+    ofstream out(req->data);
 
     out << buff.c_str();
 
@@ -40,7 +40,7 @@ void request(void * arg) {
 
     cout << v << " " << buff.size() << endl;
 
-    req->loop->add(request, arg, get_rand(10000, 30000));
+    req->loop->add(request, arg, get_rand(15000, 60000));
 }
 
 
@@ -49,10 +49,9 @@ void bar(void * c) {
 
     auto p = *(string *)a->args();
 
-    auto ad = new string(p + " + Added " + to_string(glob));
+    auto ad = new string(p + " + Added " + to_string(glob++));
 
-    sleep(10);
-
+    sleep(get_rand(10, 1000));
     a->set(ad);
 }
 
@@ -62,7 +61,7 @@ void foo(void * arg) {
 
     auto i = new string("Hello -- ");
 
-    auto a = Coro(loop, bar, i, 100);
+    auto a = Coro(loop, bar, i, get_rand(10, 1000));
 
     auto val = (string *)a.wait();
 
@@ -71,7 +70,7 @@ void foo(void * arg) {
     delete val;
     delete i;
 
-    loop->add(foo, arg, get_rand(10000, 100000));
+    loop->add(foo, arg, get_rand(100, 1000));
     //loop->add(foo, arg, get_rand(90, 200));
 
 }
@@ -81,25 +80,25 @@ void fun2(void * arg);
 void fun1(void * arg) {
     auto loop = LOOP(arg);
 
-    sleep(get_rand(300, 10000));
+    sleep(get_rand(10, 100));
+    //glob++;
     cout << glob++ << " in === === === === === === === === === === !" << endl;
-    sleep(get_rand(300, 10000));
+    sleep(get_rand(10, 100));
 
-    loop->add(fun2, arg, get_rand(10000, 100000));
+    loop->add(fun2, arg, get_rand(10, 150));
     //loop->add(fun1, arg, get_rand(100, 10000));
 }
 
 void fun2(void * arg) {
     auto loop = LOOP(arg);
 
-
-    sleep(get_rand(100, 1000));
+    sleep(get_rand(10, 100));
     cout << glob++ << " in +++ +++ +++ +++ +++ +++ +++ +++ +++ +++ !" << endl;
-    sleep(get_rand(100, 1000));
+    //glob++;
+    sleep(get_rand(10, 100));
 
-    loop->add(fun1, arg, get_rand(10000, 100000));
+    loop->add(fun1, arg, get_rand(10, 100));
     //loop->add(fun2, arg, get_rand(10000, 100000));
-
 }
 
 int main() {
@@ -117,18 +116,24 @@ int main() {
     string data;
 
     auto r = RequestSession(name, ua, &proxy);
+    auto r2 = RequestSession(name, ua, &proxy);
 
-    auto req = new Request("https://vk.com/feed","");
-    //auto req = new Request("http://httpbin.org/anything", data);
+    auto req = new Request("https://pikabu.ru","pikabu.txt");
+    auto req2 = new Request("https://vk.com/feed", "vk.txt");
     req->loop = &loop;
     req->session = &r;
-
+    req2->loop = &loop;
+    req2->session = &r2;
 
     for (int i = 1; i < 2; i++) {
-        loop.add(request, req, i * 1000 * 3);
-        sleep(100);
-        loop.add(foo, &loop, i * 1500);
-        sleep(100);
+        loop.add(request, req, i * 1000);
+        sleep(1000);
+        loop.add(request, req2, i * 1000 * 4);
+        sleep(1000);
+        loop.add(foo, &loop, i * 1000 * 8);
+        sleep(1000);
+        loop.add(fun1, &loop, i * 1000 * 16);
+        sleep(1000);
     }
 
     system("pause");
