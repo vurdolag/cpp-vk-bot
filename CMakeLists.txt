@@ -10,7 +10,18 @@ set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-Bstatic,--whole-arch
 #set(CMAKE_EXE_LINKER_FLAGS "-static-libgcc -static-libstdc++  -pthread")
 
 
-add_executable(awaiteble Coro.cpp Loop.cpp util.cpp main.cpp RequestSession.h RequestSession.cpp)
+include_directories(include/)
+include_directories(src/)
+
+
+add_executable(awaiteble
+        src/Coro.cpp
+        src/Loop.cpp
+        src/util.cpp
+        src/main.cpp
+        src/RequestSession.cpp
+        src/Session.cpp
+        src/Methods.cpp)
 
 
 find_library(LIB libcurl.dll lib)

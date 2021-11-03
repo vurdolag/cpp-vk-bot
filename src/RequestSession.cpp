@@ -101,7 +101,9 @@ RequestSession::RequestSession(const char * name, const char * user_agent_, Prox
               : cookie_file_name(name), user_agent(user_agent_), proxy(proxy_) {
     curl = curl_easy_init();
     set_default_opt();
-    set_proxy();
+    if (proxy) {
+        set_proxy();
+    }
 }
 
 RequestSession::~RequestSession() {

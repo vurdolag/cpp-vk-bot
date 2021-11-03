@@ -52,27 +52,46 @@ void bar(void * c) {
     auto ad = new string(p + " + Added " + to_string(glob++));
 
     sleep(get_rand(10, 1000));
-    a->set(ad);
+
+    a->send(ad);
 }
+
+
+void bar2(void * c) {
+    auto a = CORO(c);
+
+    auto p = (char *)a->args();
+
+    auto len = strlen(p);
+
+    const char * v = " + Added ";
+    auto v2 = to_string(glob++);
+
+    memcpy(p + strlen(p), v, len);
+    memcpy(p + (len + 9), v2.c_str(), v2.size());
+
+    sleep(get_rand(1, 30));
+
+    a->send(nullptr);
+}
+
 
 void foo(void * arg) {
     auto loop = LOOP(arg);
 
+    char buff[256] = "Hello -- ";
 
-    auto i = new string("Hello -- ");
+    loop->wait(bar2, buff);
 
-    auto a = Coro(loop, bar, i, get_rand(10, 1000));
+    cout << glob++ << " result: " << buff << endl;
 
-    auto val = (string *)a.wait();
+    loop->add(foo, arg, get_rand(100, 10000));
 
-    cout << glob++ << " result: " << *val << endl;
+    auto r = get_rand(1, 1000);
 
-    delete val;
-    delete i;
-
-    loop->add(foo, arg, get_rand(100, 1000));
-    //loop->add(foo, arg, get_rand(90, 200));
-
+    if (r > 950) {
+        loop->add(foo, arg, get_rand(90, 20000));
+    }
 }
 
 void fun2(void * arg);
@@ -125,15 +144,15 @@ int main() {
     req2->loop = &loop;
     req2->session = &r2;
 
-    for (int i = 1; i < 2; i++) {
-        loop.add(request, req, i * 1000);
-        sleep(1000);
-        loop.add(request, req2, i * 1000 * 4);
-        sleep(1000);
-        loop.add(foo, &loop, i * 1000 * 8);
-        sleep(1000);
-        loop.add(fun1, &loop, i * 1000 * 16);
-        sleep(1000);
+    for (int i = 1; i < 10; i++) {
+        //loop.add(request, req, i * 1000);
+        //sleep(1000);
+        //loop.add(request, req2, i * 1000 * 4);
+        //sleep(1000);
+        loop.add(foo, &loop, i * 1000 * 5);
+        //sleep(10);
+        //loop.add(fun1, &loop, i * 1000 * 16);
+        //sleep(1000);
     }
 
     system("pause");
