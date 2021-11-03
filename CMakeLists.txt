@@ -10,8 +10,8 @@ set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-Bstatic,--whole-arch
 #set(CMAKE_EXE_LINKER_FLAGS "-static-libgcc -static-libstdc++  -pthread")
 
 
-include_directories(include/)
-include_directories(src/)
+include_directories(include/ src/)
+#include_directories(src/)
 
 
 add_executable(awaiteble

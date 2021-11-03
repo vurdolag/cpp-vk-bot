@@ -5,7 +5,7 @@
 #include "RequestSession.h"
 
 
-size_t write_callback(char * cont_buff, size_t size, size_t n, std::string * buff) {
+inline size_t write_callback(char * cont_buff, size_t size, size_t n, std::string * buff) {
     size_t s = size * n;
     if (buff) {
         buff->append(cont_buff, s);
@@ -14,7 +14,7 @@ size_t write_callback(char * cont_buff, size_t size, size_t n, std::string * buf
 }
 
 
-void RequestSession::set_default_opt() {
+inline void RequestSession::set_default_opt() {
     curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1);
     curl_easy_setopt(curl, CURLOPT_MAXREDIRS , 10);
     //curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0);
@@ -27,6 +27,9 @@ void RequestSession::set_default_opt() {
 
     curl_easy_setopt(curl, CURLOPT_TCP_KEEPALIVE, 1);
 
+    curl_easy_setopt(curl, CURLOPT_COOKIEFILE, cookie_file_name);
+    curl_easy_setopt(curl, CURLOPT_COOKIEJAR, cookie_file_name);
+
     // debug info
     //curl_easy_setopt(curl, CURLOPT_VERBOSE, 1);
 
@@ -35,16 +38,15 @@ void RequestSession::set_default_opt() {
     }
 }
 
-void RequestSession::set_opt(std::string * buff, const char * url, bool is_post,
+inline void RequestSession::set_opt(std::string * buff, const char * url, bool is_post,
                              const char * params, const char * data) {
-
-    curl_easy_setopt(curl, CURLOPT_COOKIEFILE, cookie_file_name);
-    curl_easy_setopt(curl, CURLOPT_COOKIEJAR, cookie_file_name);
 
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, buff);
     curl_easy_setopt(curl, CURLOPT_URL, url);
     if (is_post) {
         curl_easy_setopt(curl, CURLOPT_POST, 1);
+    } else {
+        curl_easy_setopt(curl, CURLOPT_POST, 0);
     }
 
     if (is_post && data) {
@@ -52,12 +54,12 @@ void RequestSession::set_opt(std::string * buff, const char * url, bool is_post,
     }
 }
 
-void RequestSession::set_headers(bool is_post) {
+inline void RequestSession::set_headers(bool is_post) {
     //curl_slist * headers = nullptr;
     //curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
 }
 
-void RequestSession::set_proxy() {
+inline void RequestSession::set_proxy() {
     if (proxy) {
         curl_easy_setopt(curl, CURLOPT_PROXY, proxy->url.c_str());
         curl_easy_setopt(curl, CURLOPT_PROXYUSERNAME, proxy->user.c_str());
@@ -65,7 +67,7 @@ void RequestSession::set_proxy() {
     }
 }
 
-int RequestSession::request() {
+inline int RequestSession::request() {
     int res = curl_easy_perform(curl);
 
     curl_slist * cookies = nullptr;
@@ -73,7 +75,6 @@ int RequestSession::request() {
 
     auto r = curl_easy_getinfo(curl, CURLINFO_COOKIELIST, &cookies);
     if(!r && cookies) {
-        /* a linked list of cookies in cookie file format */
         each = cookies;
         while(each) {
             std::cout << "cookie: " << each->data << std::endl;
@@ -85,13 +86,13 @@ int RequestSession::request() {
     return res;
 }
 
-int RequestSession::POST(const char * url, const char * params, const char * data, std::string * buff) {
+inline int RequestSession::POST(const char * url, const char * params, const char * data, std::string * buff) {
     set_opt(buff, url, true, params, data);
     set_headers(true);
     return request();
 }
 
-int RequestSession::GET(const char * url, const char * params, std::string * buff) {
+inline int RequestSession::GET(const char * url, const char * params, std::string * buff) {
     set_opt(buff, url, false, params, nullptr);
     set_headers(false);
     return request();
@@ -101,9 +102,7 @@ RequestSession::RequestSession(const char * name, const char * user_agent_, Prox
               : cookie_file_name(name), user_agent(user_agent_), proxy(proxy_) {
     curl = curl_easy_init();
     set_default_opt();
-    if (proxy) {
-        set_proxy();
-    }
+    set_proxy();
 }
 
 RequestSession::~RequestSession() {

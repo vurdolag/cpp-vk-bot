@@ -16,7 +16,7 @@ using str = std::string;
 
 
 
-size_t write_callback_(char * cont_buff, size_t size, size_t n, std::string * buff) {
+inline size_t write_callback_(char * cont_buff, size_t size, size_t n, std::string * buff) {
     size_t s = size * n;
     if (buff) {
         buff->append(cont_buff, s);
@@ -101,7 +101,7 @@ CURLcode POST(str & url, str & data, str & buff) {
 }
 
 
-size_t get_rand(size_t a, size_t b) {
+inline size_t get_rand(size_t a, size_t b) {
     std::mt19937 rng(get_time_now());
     std::uniform_int_distribution<std::mt19937::result_type> dist6(a, b);
 
@@ -111,18 +111,18 @@ size_t get_rand(size_t a, size_t b) {
 }
 
 
-Coro * CORO(void * val) {
+inline Coro * CORO(void * val) {
     return (Coro *)val;
 }
 
-Loop * LOOP(void * val) {
+inline Loop * LOOP(void * val) {
     return (Loop *)val;
 }
 
-size_t get_time_now() {
+inline size_t get_time_now() {
     return std::chrono::system_clock::now().time_since_epoch().count();
 }
 
-void sleep(size_t t) {
+inline void sleep(size_t t) {
     std::this_thread::sleep_for(std::chrono::milliseconds(t));
 }

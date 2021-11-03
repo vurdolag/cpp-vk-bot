@@ -8,11 +8,11 @@
 #include <cstdlib>
 
 
-void * Coro::args() {
+inline void * Coro::args() {
     return arg;
 }
 
-void * Coro::wait() {
+inline void * Coro::wait() {
     loop->add(func,this, time_start);
 
     while (true) {
@@ -24,7 +24,7 @@ void * Coro::wait() {
     return out;
 }
 
-void Coro::write(void * from, size_t count) {
+inline void Coro::write(void * from, size_t count) {
     if (mem_size > 0) {
         memcpy(out, from, count);
     } else {
@@ -33,12 +33,12 @@ void Coro::write(void * from, size_t count) {
     ready = true;
 }
 
-void Coro::send(void * val) {
+inline void Coro::send(void * val) {
     out = val;
     ready = true;
 }
 
-Coro::Coro(Loop * loop_, void (*func_)(void *), void * arg_, size_t t_start_, size_t mem_size_)
+Coro::Coro(Loop * loop_, FUNC func_, void * arg_, size_t t_start_, size_t mem_size_)
     : loop(loop_), func(func_), arg(arg_), time_start(t_start_) {
         if (mem_size_ > 0) {
             mem_size = mem_size_;

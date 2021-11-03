@@ -14,11 +14,9 @@ inline void Task::call() {
     is_called = true;
     func(arg);
     is_ready = true;
-
-    //delete this;
 }
 
-Task::Task(void (*func_)(void *), void * arg_, size_t time_): func(func_), arg(arg_), time_start(time_){}
+Task::Task(FUNC func_, void * arg_, size_t time_): func(func_), arg(arg_), time_start(time_){}
 Task::Task(){
     func = nullptr;
     arg = nullptr;
@@ -26,7 +24,7 @@ Task::Task(){
 }
 
 
-[[noreturn]] void Worker::loop() {
+void Worker::loop() {
     while (active){
         sleep(10);
         if (task) {
@@ -68,7 +66,7 @@ inline void Worker::stop() {
 
 Worker::Worker() {
     last_start = get_time_now();
-    loop_thread = new std::thread(&Worker::loop, this);
+    loop_thread = new thread(&Worker::loop, this);
     loop_thread->detach();
 }
 
@@ -117,7 +115,7 @@ inline void ThreadPool::start(Task * task_) {
 
 ThreadPool::ThreadPool() {
     mux = new std::mutex;
-    count = 10;
+    count = 4;
     for (size_t i = 0; i < count; i++) {
         auto w = new Worker();
         pool.push_back(w);
@@ -137,26 +135,20 @@ ThreadPool::~ThreadPool() {
     TASKS tasks_for;
 
     while (true) {
-        sleep(25);
-
-        //for (auto i : tasks) {
-        //    std::cout << i->time_start << std::endl;
-        //}
+        sleep(5);
 
         t = get_time_now();
 
-        //std::cout << "tasks.size() " << tasks.size() << " " << t << std::endl;
-
         if (!tasks.empty()) {
             mux->lock();
-            Task * tt = tasks.back();
-            while (tt && tt->time_start <= t) {
-                tasks_for.push_back(tt);
+            Task * task = tasks.back();
+            while (task->time_start <= t) {
+                tasks_for.push_back(task);
                 tasks.pop_back();
                 if (tasks.empty()) {
                     break;
                 }
-                tt = tasks.back();
+                task = tasks.back();
             }
             mux->unlock();
         }
@@ -175,21 +167,20 @@ ThreadPool::~ThreadPool() {
     }
 }
 
-inline Task * Loop::alloc_task(void (*func)(void *), void * arg, size_t time_start) const {
+inline Task * Loop::alloc_task(FUNC func, void * arg, size_t time_start) const {
     auto t = get_time_now() + time_start * 1000000;
     return new Task(func, arg, t);
 }
 
 inline void Loop::dealloc_called_tasks() {
-    for (size_t i = 0; i < tasks_in_process.size(); i++) {
-        auto t = tasks_in_process[i];
-        if (t && t->is_called && t->is_ready) {
-            delete t;
-            tasks_in_process[i] = nullptr;
-        }
-    }
-
     if (!tasks_in_process.empty()) {
+        for (auto & t : tasks_in_process) {
+            if (t && t->is_called && t->is_ready) {
+                delete t;
+                t = nullptr;
+            }
+        }
+
         std::sort(tasks_in_process.begin(), tasks_in_process.end(),
                   [](const Task * lhs, const Task * rhs) {
                       return (lhs == nullptr) < (rhs == nullptr);
@@ -208,7 +199,7 @@ inline void Loop::dealloc_called_tasks() {
 }
 
 
-void Loop::add(void (*func)(void *), void * arg, size_t time_start) {
+inline void Loop::add(FUNC func, void * arg, size_t time_start) {
     auto task = alloc_task(func, arg, time_start);
 
     mux->lock();
@@ -220,7 +211,7 @@ void Loop::add(void (*func)(void *), void * arg, size_t time_start) {
 }
 
 
-void * Loop::wait(void (*func)(void *), void * arg, size_t time_start){
+inline void * Loop::wait(FUNC func, void * arg, size_t time_start){
     return Coro(this, func, arg, time_start).wait();
 }
 

@@ -24,21 +24,21 @@ private:
     const char * user_agent = nullptr;
     Proxy * proxy = nullptr;
 
-    void set_default_opt();
+    inline void set_default_opt();
 
-    void set_opt(std::string * buff, const char * url, bool is_post, const char * params, const char * data);
+    inline void set_opt(std::string * buff, const char * url, bool is_post, const char * params, const char * data);
 
-    void set_headers(bool is_post);
+    inline void set_headers(bool is_post);
 
-    void set_proxy();
+    inline void set_proxy();
 
-    int request();
+    inline int request();
 
 
 public:
-    int POST(const char * url, const char * params, const char * data, std::string * buff);
+    inline int POST(const char * url, const char * params, const char * data, std::string * buff);
 
-    int GET(const char * url, const char * params, std::string * buff);
+    inline int GET(const char * url, const char * params, std::string * buff);
 
     RequestSession(const char * name, const char * user_agent_, Proxy * proxy_);
 

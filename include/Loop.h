@@ -9,17 +9,18 @@
 #include <vector>
 #include <thread>
 
+using FUNC = void (*)(void *);
 
 struct Task {
     size_t time_start = 0;
-    void (*func)(void *) = nullptr;
+    FUNC func = nullptr;
     void * arg = nullptr;
     bool is_called = false;
     bool is_ready = false;
 
     inline void call();
 
-    Task(void (*func_)(void *), void * arg_, size_t time_);
+    Task(FUNC func_, void * arg_, size_t time_);
     Task();
 };
 
@@ -37,7 +38,7 @@ private:
     bool in_process = false;
     bool loop_is_exit = false;
 
-    [[noreturn]] void loop();
+    void loop();
 
 public:
     inline size_t get_last_start();
@@ -83,12 +84,12 @@ private:
     [[noreturn]] void event_loop();
 
     inline void dealloc_called_tasks();
-    inline Task * alloc_task(void (*func)(void *), void * arg, size_t t) const;
+    inline Task * alloc_task(FUNC func, void * arg, size_t t) const;
 
 public:
-    void add(void (*func)(void *), void * arg, size_t time_start = 0);
+    inline void add(FUNC func, void * arg, size_t time_start = 0);
 
-    void * wait(void (*func)(void *), void * arg, size_t time_start = 0);
+    inline void * wait(FUNC func, void * arg, size_t time_start = 0);
 
     explicit Loop();
     ~Loop();

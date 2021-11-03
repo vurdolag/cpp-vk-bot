@@ -12,22 +12,22 @@ class Coro {
 private:
     void * out = nullptr;
     void * arg = nullptr;
+    Loop * loop = nullptr;
+    FUNC func = nullptr;
     size_t mem_size = 0;
     size_t time_start = 0;
-    Loop * loop;
-    void (*func)(void *);
     bool ready = false;
 
 public:
-    void * args();
+    inline void * args();
 
-    void * wait();
+    inline void * wait();
 
-    void write(void * from, size_t count);
+    inline void write(void * from, size_t count);
 
-    void send(void * val);
+    inline void send(void * val);
 
-    Coro(Loop * loop_, void (*func_)(void *), void * arg_, size_t t_start_ = 0, size_t mem_size_ = 0);
+    Coro(Loop * loop_, FUNC func_, void * arg_, size_t t_start_ = 0, size_t mem_size_ = 0);
     ~Coro();
 };
 
